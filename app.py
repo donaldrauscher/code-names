@@ -18,7 +18,7 @@ app = dash.Dash()
 server = app.server
 
 # load model
-model = 'glove/w2v.{}.txt'.format(os.getenv('GLOVE_MODEL', 'glove.6B.50d'))
+model = 'glove/w2v.{}.txt.gz'.format(os.getenv('GLOVE_MODEL', 'glove.6B.50d'))
 word_vectors = KeyedVectors.load_word2vec_format(model, binary=False)
 
 # precompute L2-normalized vectors (saves lots of memory)
