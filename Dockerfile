@@ -2,27 +2,29 @@ FROM continuumio/miniconda3:4.4.10
 
 ENV PORT 8050
 ENV CONDA_ENV code-names
-ENV GLOVE_MODEL glove.6B.100d
-ENV PATH /opt/conda/envs/$CONDA_ENV/bin:$PATH
+ENV GLOVE_MODEL glove.6B.50d
+ENV GUNICORN_WORKERS 3
+ENV APP_DIR /app
 
-RUN apt-get update
-RUN apt-get install unzip
+WORKDIR $APP_DIR
 
-WORKDIR /app
+RUN apt-get update \
+  && apt-get install -y unzip \
+  && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN conda create -n ${CONDA_ENV}
-RUN while read req; do pip install --upgrade $req; done < requirements.txt
+COPY requirements.txt app.py entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 
-RUN wget http://nlp.stanford.edu/data/glove.6B.zip
-RUN unzip glove.6B.zip -d glove && rm glove.6B.zip
-RUN python -m gensim.scripts.glove2word2vec --input glove/${GLOVE_MODEL}.txt --output glove/w2v.${GLOVE_MODEL}.txt
-RUN rm glove/glove.6B.*.txt
+RUN conda create -n ${CONDA_ENV} \
+  && export PATH=/opt/conda/envs/$CONDA_ENV/bin:$PATH \
+  && while read req; do pip install --no-cache-dir --upgrade $req; done < requirements.txt
 
-ADD app.py .
-COPY entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN wget -q http://nlp.stanford.edu/data/glove.6B.zip \
+  && unzip glove.6B.zip -d glove \
+  && rm glove.6B.zip \
+  && python -m gensim.scripts.glove2word2vec --input glove/${GLOVE_MODEL}.txt --output glove/w2v.${GLOVE_MODEL}.txt \
+  && rm glove/glove.6B.*.txt
 
 EXPOSE $PORT
 
-ENTRYPOINT ["/bin/bash", "-c", "entrypoint.sh"]
+ENTRYPOINT $APP_DIR/entrypoint.sh
