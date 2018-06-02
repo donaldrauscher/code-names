@@ -7,4 +7,5 @@ gunicorn app:server \
     --preload \
     --worker-class gevent \
     --timeout 600 \
-    --log-level info
+    --log-level info \
+    "$@"
